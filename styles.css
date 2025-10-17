@@ -1,0 +1,88 @@
+body {
+  background-color: #18426e;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding-bottom: 60px;
+}
+
+h1 {
+  font-weight: bold;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.card {
+  border-radius: 15px;
+}
+
+.tasks-list {
+  margin-top: 20px;
+}
+
+.task {
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+}
+
+.task.fade-out {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.task h3 {
+  color: #007bff;
+  margin-bottom: 5px;
+}
+
+.task p {
+  margin: 3px 0;
+  font-size: 15px;
+}
+
+.task .buttons {
+  margin-top: 10px;
+}
+
+.task button {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 5px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.task button:hover {
+  opacity: 0.85;
+}
+
+.task button:nth-child(1) { background: #28a745; color: white; }
+.task button:nth-child(2) { background: #ffc107; color: black; }
+.task button:nth-child(3) { background: #dc3545; color: white; }
+
+.empty {
+  text-align: center;
+  color: white;
+  background: rgba(0,0,0,0.1);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+#stats {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+#clearAll {
+  background: #dc3545;
+  color: white;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: bold;
+}
