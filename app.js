@@ -2,8 +2,14 @@ const form = document.getElementById('taskForm');
 const tasksList = document.getElementById('tasksList');
 const stats = document.getElementById('stats');
 const clearAllBtn = document.getElementById('clearAll');
+const modal = document.getElementById('modalConfirm');
+const confirmDeleteBtn = document.getElementById('confirmDelete');
+const cancelDeleteBtn = document.getElementById('cancelDelete');
+const searchContainer = document.getElementById('searchContainer');
+const searchInput = document.getElementById('searchInput');
 
 let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+let taskToDelete = null;
 
 function saveTasks() {
   localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -16,10 +22,15 @@ function renderStats() {
   stats.textContent = `Total: ${total} | Completadas: ${completed} | Pendientes: ${pending}`;
 }
 
-function renderTasks() {
+function renderTasks(filter = "") {
   tasksList.innerHTML = '';
 
-  if (tasks.length === 0) {
+  let filteredTasks = tasks.filter(task =>
+    task.title.toLowerCase().includes(filter.toLowerCase()) ||
+    task.description.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  if (filteredTasks.length === 0) {
     const emptyMsg = document.createElement('p');
     emptyMsg.classList.add('empty');
     emptyMsg.textContent = 'No hay tareas registradas.';
@@ -28,7 +39,7 @@ function renderTasks() {
     return;
   }
 
-  tasks.forEach((task, index) => {
+  filteredTasks.forEach((task, index) => {
     const div = document.createElement('div');
     div.classList.add('task');
 
@@ -49,31 +60,57 @@ function renderTasks() {
 
     const btnToggle = document.createElement('button');
     btnToggle.textContent = task.completed ? 'Marcar pendiente' : 'Marcar completada';
-    btnToggle.setAttribute('onclick', `toggleTask(${index})`);
+    btnToggle.onclick = () => toggleTask(index);
 
     const btnEdit = document.createElement('button');
     btnEdit.textContent = 'Editar';
-    btnEdit.setAttribute('onclick', `editTask(${index})`);
+    btnEdit.onclick = () => editTask(index);
 
     const btnDelete = document.createElement('button');
     btnDelete.textContent = 'Eliminar';
-    btnDelete.setAttribute('onclick', `deleteTask(${index})`);
+    btnDelete.onclick = () => tryDeleteTask(index);
 
-    btnContainer.appendChild(btnToggle);
-    btnContainer.appendChild(btnEdit);
-    btnContainer.appendChild(btnDelete);
+    btnContainer.append(btnToggle, btnEdit, btnDelete);
 
-    div.appendChild(title);
-    div.appendChild(desc);
-    div.appendChild(date);
-    div.appendChild(status);
-    div.appendChild(btnContainer);
-
+    div.append(title, desc, date, status, btnContainer);
     tasksList.appendChild(div);
   });
 
   renderStats();
+
+  // Si hay más de 10 tareas, mostrar búsqueda
+  if (tasks.length > 10) {
+    searchContainer.classList.remove('d-none');
+  } else {
+    searchContainer.classList.add('d-none');
+  }
 }
+
+// Intento de eliminar tarea
+function tryDeleteTask(index) {
+  if (!tasks[index].completed) {
+    alert("⚠️ No puedes eliminar una tarea que no esté completada.");
+    return;
+  }
+  taskToDelete = index;
+  modal.style.display = 'flex';
+}
+
+// Confirmar o cancelar eliminación
+confirmDeleteBtn.onclick = () => {
+  if (taskToDelete !== null) {
+    tasks.splice(taskToDelete, 1);
+    saveTasks();
+    renderTasks();
+    modal.style.display = 'none';
+    taskToDelete = null;
+  }
+};
+
+cancelDeleteBtn.onclick = () => {
+  modal.style.display = 'none';
+  taskToDelete = null;
+};
 
 form.addEventListener('submit', e => {
   e.preventDefault();
@@ -92,16 +129,6 @@ form.addEventListener('submit', e => {
   renderTasks();
   form.reset();
 });
-
-function deleteTask(index) {
-  const taskElement = tasksList.children[index];
-  taskElement.classList.add('fade-out');
-  setTimeout(() => {
-    tasks.splice(index, 1);
-    saveTasks();
-    renderTasks();
-  }, 300);
-}
 
 function editTask(index) {
   const task = tasks[index];
@@ -133,5 +160,21 @@ clearAllBtn.addEventListener('click', () => {
     renderTasks();
   }
 });
+
+// Filtro de búsqueda
+searchInput.addEventListener('input', e => {
+  renderTasks(e.target.value);
+});
+
+// Modos de color
+document.getElementById('dayMode').onclick = () => {
+  document.body.className = 'day-mode';
+};
+document.getElementById('nightMode').onclick = () => {
+  document.body.className = 'night-mode';
+};
+document.getElementById('spidermanMode').onclick = () => {
+  document.body.className = 'spiderman-mode';
+};
 
 renderTasks();
