@@ -2,14 +2,10 @@ const form = document.getElementById('taskForm');
 const tasksList = document.getElementById('tasksList');
 const stats = document.getElementById('stats');
 const clearAllBtn = document.getElementById('clearAll');
-const modal = document.getElementById('modalConfirm');
-const confirmDeleteBtn = document.getElementById('confirmDelete');
-const cancelDeleteBtn = document.getElementById('cancelDelete');
-const searchContainer = document.getElementById('searchContainer');
-const searchInput = document.getElementById('searchInput');
+const searchInput = document.getElementById('taskSearch');
 
 let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-let taskToDelete = null;
+let taskToDeleteIndex = null;
 
 function saveTasks() {
   localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -22,15 +18,11 @@ function renderStats() {
   stats.textContent = `Total: ${total} | Completadas: ${completed} | Pendientes: ${pending}`;
 }
 
-function renderTasks(filter = "") {
+function renderTasks(filteredTasks = null) {
+  const list = filteredTasks || tasks;
   tasksList.innerHTML = '';
 
-  let filteredTasks = tasks.filter(task =>
-    task.title.toLowerCase().includes(filter.toLowerCase()) ||
-    task.description.toLowerCase().includes(filter.toLowerCase())
-  );
-
-  if (filteredTasks.length === 0) {
+  if (list.length === 0) {
     const emptyMsg = document.createElement('p');
     emptyMsg.classList.add('empty');
     emptyMsg.textContent = 'No hay tareas registradas.';
@@ -39,78 +31,28 @@ function renderTasks(filter = "") {
     return;
   }
 
-  filteredTasks.forEach((task, index) => {
+  list.forEach((task, index) => {
     const div = document.createElement('div');
     div.classList.add('task');
 
-    const title = document.createElement('h3');
-    title.textContent = task.title;
+    div.innerHTML = `
+      <h3>${task.title}</h3>
+      <p>${task.description}</p>
+      <p><strong>Fecha límite:</strong> ${task.date || 'Sin fecha'}</p>
+      <p><strong>Estado:</strong> ${task.completed ? '✅ Completada' : '⏳ Pendiente'}</p>
+      <div class="buttons">
+        <button onclick="toggleTask(${index})">${task.completed ? 'Marcar pendiente' : 'Marcar completada'}</button>
+        <button onclick="editTask(${index})">Editar</button>
+        <button onclick="deleteTask(${index})">Eliminar</button>
+      </div>
+    `;
 
-    const desc = document.createElement('p');
-    desc.textContent = task.description;
-
-    const date = document.createElement('p');
-    date.innerHTML = `<strong>Fecha límite:</strong> ${task.date || 'Sin fecha'}`;
-
-    const status = document.createElement('p');
-    status.innerHTML = `<strong>Estado:</strong> ${task.completed ? '✅ Completada' : '⏳ Pendiente'}`;
-
-    const btnContainer = document.createElement('div');
-    btnContainer.classList.add('buttons');
-
-    const btnToggle = document.createElement('button');
-    btnToggle.textContent = task.completed ? 'Marcar pendiente' : 'Marcar completada';
-    btnToggle.onclick = () => toggleTask(index);
-
-    const btnEdit = document.createElement('button');
-    btnEdit.textContent = 'Editar';
-    btnEdit.onclick = () => editTask(index);
-
-    const btnDelete = document.createElement('button');
-    btnDelete.textContent = 'Eliminar';
-    btnDelete.onclick = () => tryDeleteTask(index);
-
-    btnContainer.append(btnToggle, btnEdit, btnDelete);
-
-    div.append(title, desc, date, status, btnContainer);
     tasksList.appendChild(div);
   });
 
   renderStats();
-
-  // Si hay más de 10 tareas, mostrar búsqueda
-  if (tasks.length > 10) {
-    searchContainer.classList.remove('d-none');
-  } else {
-    searchContainer.classList.add('d-none');
-  }
+  searchInput.style.display = tasks.length > 10 ? 'block' : 'none';
 }
-
-// Intento de eliminar tarea
-function tryDeleteTask(index) {
-  if (!tasks[index].completed) {
-    alert("⚠️ No puedes eliminar una tarea que no esté completada.");
-    return;
-  }
-  taskToDelete = index;
-  modal.style.display = 'flex';
-}
-
-// Confirmar o cancelar eliminación
-confirmDeleteBtn.onclick = () => {
-  if (taskToDelete !== null) {
-    tasks.splice(taskToDelete, 1);
-    saveTasks();
-    renderTasks();
-    modal.style.display = 'none';
-    taskToDelete = null;
-  }
-};
-
-cancelDeleteBtn.onclick = () => {
-  modal.style.display = 'none';
-  taskToDelete = null;
-};
 
 form.addEventListener('submit', e => {
   e.preventDefault();
@@ -129,6 +71,30 @@ form.addEventListener('submit', e => {
   renderTasks();
   form.reset();
 });
+
+function deleteTask(index) {
+  const task = tasks[index];
+  if (!task.completed) {
+    alert("Solo puedes eliminar tareas que ya estén completadas ✅");
+    return;
+  }
+  taskToDeleteIndex = index;
+  document.getElementById("deleteModal").style.display = "flex";
+}
+
+document.getElementById("confirmDelete").onclick = () => {
+  if (taskToDeleteIndex !== null) {
+    tasks.splice(taskToDeleteIndex, 1);
+    saveTasks();
+    renderTasks();
+  }
+  document.getElementById("deleteModal").style.display = "none";
+};
+
+document.getElementById("cancelDelete").onclick = () => {
+  document.getElementById("deleteModal").style.display = "none";
+  taskToDeleteIndex = null;
+};
 
 function editTask(index) {
   const task = tasks[index];
@@ -161,20 +127,27 @@ clearAllBtn.addEventListener('click', () => {
   }
 });
 
-// Filtro de búsqueda
-searchInput.addEventListener('input', e => {
-  renderTasks(e.target.value);
+// ----- FILTRO DE BÚSQUEDA -----
+searchInput.addEventListener('input', () => {
+  const keyword = searchInput.value.toLowerCase();
+  const filtered = tasks.filter(t =>
+    t.title.toLowerCase().includes(keyword) ||
+    t.description.toLowerCase().includes(keyword)
+  );
+  renderTasks(filtered);
 });
 
-// Modos de color
-document.getElementById('dayMode').onclick = () => {
-  document.body.className = 'day-mode';
-};
-document.getElementById('nightMode').onclick = () => {
-  document.body.className = 'night-mode';
-};
-document.getElementById('spidermanMode').onclick = () => {
-  document.body.className = 'spiderman-mode';
-};
+// ----- MODOS VISUALES -----
+document.getElementById("dayMode").addEventListener("click", () => {
+  document.body.className = "light-mode";
+});
+
+document.getElementById("nightMode").addEventListener("click", () => {
+  document.body.className = "dark-mode";
+});
+
+document.getElementById("spidermanMode").addEventListener("click", () => {
+  document.body.className = "spiderman-mode";
+});
 
 renderTasks();
